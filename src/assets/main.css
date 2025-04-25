@@ -1,0 +1,7 @@
+@import './base.css';
+
+body {
+  color: var(--color-text);
+  background: var(--vt-c-black);
+  
+}
