@@ -99,90 +99,96 @@ onMounted(() => {
       </button>
     </div>
 
-    <div class="container__warning d-flex justify-content-start align-items-center">
-      <IconWarning/>
-      <div class="form-text desktop">
-        Для указания нескольких меток для одной пары логин/пароль используйте разделитель ";"
-      </div>
+    <div class="wrapper empty d-flex justify-content-center" v-if="accounts.length === 0">
+      <div class="form-text">Создайте учетную запись</div>
     </div>
-    
 
-    <div v-for="(account, index) in accounts" :key="account.id" class="card d-flex mb-3 p-3">
-      <div class="row g-3 align-items-start ">
-
-        <!-- Метка -->
-        <div class="col-md-3">
-          <label class="form-label">Метка</label>
-          <input
-            type="text"
-            class="form-control"
-            :class="{ 'is-invalid': hasError(account.id, 'label') }"
-            v-model="account.rawLabel"
-            @focus="onLabelBlur(account)"
-            placeholder="Введите метки через ;"
-            maxlength="50"
-          />
-          <div class="form-text mobile">Введите метки через точку с запятой (;)</div>
+    <div class="wrapper" v-else>
+      <div class="container__warning d-flex justify-content-start align-items-center">
+        <IconWarning/>
+        <div class="form-text desktop-text">
+          Для указания нескольких меток для одной пары логин/пароль используйте разделитель ";"
         </div>
+      </div>
+      
 
-        <!-- Тип записи -->
-        <div class="col-md-2">
-          <label class="form-label">Тип записи</label>
-          <select
-            class="form-select"
-            v-model="account.type"
-            @change="onTypeChange(account)"
-          >
-            <option value="Локальная">Локальная</option>
-            <option value="LDAP">LDAP</option>
-          </select>
-        </div>
+      <div v-for="(account, index) in accounts" :key="account.id" class="card d-flex mb-3 p-3">
+        <div class="row g-3 align-items-start ">
 
-        <!-- Логин -->
-        <div :class="account.type === 'LDAP' ? 'col-md-4' : 'col-md-3'">
-          <label class="form-label">Логин</label>
-          <input
-            type="text"
-            class="form-control"
-            :class="{ 'is-invalid': hasError(account.id, 'login') }"
-            v-model="account.login"
-            @blur="() => validate(account)"
-            maxlength="100"
-          />
-        </div>
-
-        <!-- Пароль -->
-        <div v-if="account.type === 'Локальная'" class="row__password col-md-3">
-          <label class="form-label">Пароль</label>
-          <div class="input-wraper">
+          <!-- Метка -->
+          <div class="col-md-3">
+            <label class="form-label">Метка</label>
             <input
-              :type="showPasswords[account.id] ? 'text' : 'password'"
+              type="text"
               class="form-control"
-              :class="{ 'is-invalid': hasError(account.id, 'password') }"
-              v-model="account.password"
+              :class="{ 'is-invalid': hasError(account.id, 'label') }"
+              v-model="account.rawLabel"
+              @focus="onLabelBlur(account)"
+              placeholder="Введите метки через ;"
+              maxlength="50"
+            />
+            <div class="form-text mobile-text">Введите метки через точку с запятой (;)</div>
+          </div>
+
+          <!-- Тип записи -->
+          <div class="col-md-2">
+            <label class="form-label">Тип записи</label>
+            <select
+              class="form-select"
+              v-model="account.type"
+              @change="onTypeChange(account)"
+            >
+              <option value="Локальная">Локальная</option>
+              <option value="LDAP">LDAP</option>
+            </select>
+          </div>
+
+          <!-- Логин -->
+          <div :class="account.type === 'LDAP' ? 'col-md-4' : 'col-md-3'">
+            <label class="form-label">Логин</label>
+            <input
+              type="text"
+              class="form-control"
+              :class="{ 'is-invalid': hasError(account.id, 'login') }"
+              v-model="account.login"
               @blur="() => validate(account)"
               maxlength="100"
             />
-            <button
-              v-if="!hasError(account.id, 'password')"
-              class="btn"
-              type="button"
-              @click="togglePasswordVisibility(account.id)"
-            >
-              <IconPasswordShow v-if="showPasswords[account.id]"/>
-              <IconPasswordHidden v-else/>
+          </div>
+
+          <!-- Пароль -->
+          <div v-if="account.type === 'Локальная'" class="row__password col-md-3">
+            <label class="form-label">Пароль</label>
+            <div class="input-wraper">
+              <input
+                :type="showPasswords[account.id] ? 'text' : 'password'"
+                class="form-control"
+                :class="{ 'is-invalid': hasError(account.id, 'password') }"
+                v-model="account.password"
+                @blur="() => validate(account)"
+                maxlength="100"
+              />
+              <button
+                v-if="!hasError(account.id, 'password')"
+                class="btn"
+                type="button"
+                @click="togglePasswordVisibility(account.id)"
+              >
+                <IconPasswordShow v-if="showPasswords[account.id]"/>
+                <IconPasswordHidden v-else/>
+              </button>
+            </div>
+          </div>
+
+          <!-- Удалить -->
+          <div class="row__remove-btn col-md-1 text-end">
+            <button class="btn btn-outline-danger mt-4" @click="removeAccount(account.id)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+              </svg>
             </button>
           </div>
-        </div>
-
-        <!-- Удалить -->
-        <div class="row__remove-btn col-md-1 text-end">
-          <button class="btn btn-outline-danger mt-4" @click="removeAccount(account.id)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
-              <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
-              <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
-            </svg>
-          </button>
         </div>
       </div>
     </div>
@@ -194,14 +200,17 @@ onMounted(() => {
 .container {
   width: 100%;
   min-width: 310px;
-  
+
+  .empty {
+    margin-top: 50px;
+  }
   .container__warning{
     margin: 0 0 1rem 10px;
     gap: 10px;
     @media screen and (max-width: 767px) {
       display: none !important;
     }
-    .desktop {
+    .desktop-text {
       color: var(--vt-c-text-dark-2);
       margin: 0;
     }
@@ -212,7 +221,7 @@ onMounted(() => {
     gap: 4px;
     background: var(--vt-c-white-mute);
 
-    .mobile {
+    .mobile-text {
       display: none;
       @media screen and (max-width: 767px) {
         display: block;
