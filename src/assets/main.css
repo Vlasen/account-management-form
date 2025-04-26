@@ -4,7 +4,3 @@ body {
   color: var(--color-text);
   background: var(--vt-c-black);
 }
-
-.form-text {
-  color: var(--vt-c-text-dark-2);
-}

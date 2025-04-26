@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useAccountStore } from '@/stores/useAccountStore'
-import { computed, reactive, ref, onMounted } from 'vue'
+import { computed, reactive, ref, onMounted, onUnmounted } from 'vue'
 import IconPasswordShow from './icons/IconPasswordShow.vue'
 import IconPasswordHidden from './icons/IconPasswordHidden.vue'
 import IconWarning from './icons/IconWarning.vue'
@@ -30,7 +30,11 @@ interface Errors {
 }
 
 const errors: Errors = reactive({});
-const showPasswords = ref<Record<string, boolean>>({})
+const showPasswords = ref<Record<string, boolean>>({});
+const topBlock = ref<HTMLElement | null>(null);
+const isButtonFixed = ref(false);
+const isMobile = ref(window.innerWidth <= 767);
+
 
 function togglePasswordVisibility(id: string) {
   showPasswords.value[id] = !showPasswords.value[id]
@@ -47,7 +51,6 @@ function onLabelBlur(account: AccountEntry) {
     .map(part => part.trim())
     .filter(part => part.length > 0);
   account.labels = parts.map(part => ({ text: part }));
-  validate(account);
 }
 
 function onTypeChange(account: AccountEntry) {
@@ -56,24 +59,42 @@ function onTypeChange(account: AccountEntry) {
   } else if (account.password === null) {
     account.password = '';
   }
-  validate(account);
 }
 
-function validate(account: AccountEntry) {
+function validateLogin(account: AccountEntry) {
   const id = account.id;
-  
-  errors[id] = {
-    label: account.rawLabel.length > 50,
-    login: account.login.trim() === '' || account.login.length > 100,
-    password:
-      account.type === 'Локальная' 
-      ? (!account.password || account.password?.trim() === '' || account.password.length > 100) 
-      : false
-  }
+  if (!errors[id]) errors[id] = {};
+
+  errors[id].login = account.login.trim() === '' || account.login.length > 100;
+
   const hasAnyError = Object.values(errors[id]).some(Boolean);
   if (!hasAnyError) {
     updateAccount(account);
   }
+}
+
+function validatePassword(account: AccountEntry) {
+  const id = account.id;
+  if (!errors[id]) errors[id] = {};
+
+  errors[id].password = account.type === 'Локальная'
+    ? (!account.password || account.password.trim() === '' || account.password.length > 100)
+    : false
+
+  const hasAnyError = Object.values(errors[id]).some(Boolean);
+  if (!hasAnyError) {
+    updateAccount(account);
+  }
+}
+
+function handleScroll() {
+  if (!topBlock.value) return
+
+  const rect = topBlock.value.getBoundingClientRect();
+  isButtonFixed.value = rect.bottom <= 0;
+}
+function handleResize() {
+  isMobile.value = window.innerWidth <= 767;
 }
 
 onMounted(() => {
@@ -87,15 +108,30 @@ onMounted(() => {
       return
     }
   })
+  window.addEventListener('scroll', handleScroll);
+  window.addEventListener('resize', handleResize);
 })
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll);
+  window.removeEventListener('resize', handleResize);
+})
+
 </script>
 
 <template>
   <div class="container mt-4">
-    <div class="container__top-block d-flex justify-content-between align-items-center mb-3">
+    <div ref="topBlock" 
+      class="container__top-block d-flex justify-content-between align-items-center mb-3"
+    >
       <h2>Учетные записи</h2>
-      <button class="btn btn-success" @click="addAccount">
-        <IconPlus/>
+      <button
+        :class="['btn btn-success d-flex justify-content-center align-items-center', { 'fixed-add-button': isButtonFixed }]"
+        @click="addAccount"
+      >
+        <span v-if="isButtonFixed && isMobile" class="btn-text">Добавить учетную запись</span>
+        <div v-else class="btn-icon">
+          <IconPlus/>
+        </div>
       </button>
     </div>
 
@@ -151,7 +187,7 @@ onMounted(() => {
               class="form-control"
               :class="{ 'is-invalid': hasError(account.id, 'login') }"
               v-model="account.login"
-              @blur="() => validate(account)"
+              @blur="() => validateLogin(account)"
               maxlength="100"
             />
           </div>
@@ -165,7 +201,7 @@ onMounted(() => {
                 class="form-control"
                 :class="{ 'is-invalid': hasError(account.id, 'password') }"
                 v-model="account.password"
-                @blur="() => validate(account)"
+                @blur="() => validatePassword(account)"
                 maxlength="100"
               />
               <button
@@ -203,6 +239,26 @@ onMounted(() => {
 
   .empty {
     margin-top: 50px;
+    .form-text {
+      color: var(--vt-c-text-dark-2);
+    }
+  }
+  
+  .container__top-block {
+    .fixed-add-button {
+      position: fixed;
+      bottom: 20px;
+      right: 30px;
+      height: 40px;
+      z-index: 10;
+      @media screen and (max-width: 767px) {
+        width: calc(100% - var(--bs-gutter-x));
+        left: 50%;
+        transform: translateX(-50%);
+        max-width: 517px;
+        padding: 0.75rem 1.5rem;
+      }
+    }
   }
   .container__warning{
     margin: 0 0 1rem 10px;
@@ -215,39 +271,42 @@ onMounted(() => {
       margin: 0;
     }
   }
-  
-  .card {
-    border-radius: 10px;
-    gap: 4px;
-    background: var(--vt-c-white-mute);
+  .wrapper {
+    .card {
+      border-radius: 10px;
+      gap: 4px;
+      background: var(--vt-c-white-mute);
 
-    .mobile-text {
-      display: none;
-      @media screen and (max-width: 767px) {
-        display: block;
+      .mobile-text {
+        display: none;
+        @media screen and (max-width: 767px) {
+          display: block;
+        }
       }
-    }
-    .col-md-4 {
-      flex: 1 0 auto;
-    }
-    .input-wraper {
-      position: relative;
-      .btn {
-        position: absolute;
-        right: 0;
-        top: 0;
-        border: none;
+      .col-md-4 {
+        flex: 1 0 auto;
       }
-    }
-    .row__remove-btn {
-      margin-top: calc(var(--bs-gutter-y) + 7px);
+      .input-wraper {
+        position: relative;
+        .btn {
+          position: absolute;
+          right: 0;
+          top: 0;
+          border: none;
+        }
+      }
+      .row__remove-btn {
+        margin-top: calc(var(--bs-gutter-y) + 7px);
 
-      @media screen and (max-width: 767px) {
-        margin-top: 0;
+        @media screen and (max-width: 767px) {
+          margin-top: 0;
+        }
       }
     }
   }
-
+  .wrapper > div:last-child {
+    margin-bottom: 70px !important;
+  }
 }
 
 </style>
