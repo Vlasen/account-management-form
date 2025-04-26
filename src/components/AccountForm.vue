@@ -99,11 +99,10 @@ function handleResize() {
 
 onMounted(() => {
   accounts.value.forEach(account => {
-    const hasEmptyRequired =
-      account.login.trim() === '' ||
-      (account.type === 'Локальная' && (!account.password || account.password.trim() === ''));
+    const loginEmpty = account.login.trim() === '';
+    const passwordEmpty = account.type === 'Локальная' && (!account.password || account.password.trim() === '');
 
-    if (hasEmptyRequired && !account.rawLabel.trim()) {
+    if (loginEmpty || passwordEmpty) {
       removeAccount(account.id);
       return
     }
@@ -189,6 +188,7 @@ onUnmounted(() => {
               v-model="account.login"
               @blur="() => validateLogin(account)"
               maxlength="100"
+              autocomplete="off"
             />
           </div>
 
@@ -203,6 +203,7 @@ onUnmounted(() => {
                 v-model="account.password"
                 @blur="() => validatePassword(account)"
                 maxlength="100"
+                autocomplete="off"
               />
               <button
                 v-if="!hasError(account.id, 'password')"
